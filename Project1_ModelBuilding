@@ -1,0 +1,123 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Aug 20 17:16:15 2020
+
+@author: michel
+"""
+
+
+# -*- coding: utf-8 -*-
+"""
+Created on Thu 20 16:41:10 2020
+
+# MODEL BUILDING #
+
+@author: Michel Mendonca
+"""
+
+import pandas as pd 
+import matplotlib.pyplot as plt 
+import numpy as np 
+
+df = pd.read_csv("/home/michel/USGrowth10.csv")
+
+
+# choose relevant data
+#df.replace(np.nan, 0, inplace=True) 
+df.columns
+df_Growth = df
+
+# get dummy data
+df_dumGrowth = pd.get_dummies(df_Growth)
+
+
+# train test split
+
+from sklearn.model_selection import train_test_split
+
+XGrowth = df_dumGrowth.drop('Year', axis =1)
+yGrowth = df_dumGrowth.Year.values
+
+XGrowth_train, XGrowth_test, yGrowth_train, yGrowth_test = train_test_split(XGrowth, yGrowth, test_size=0.2, random_state=42)
+
+# multiple linear regression
+
+import statsmodels.api as sm
+
+XGrowth_sm = XGrowth = sm.add_constant(XGrowth)
+modelGrowth = sm.OLS(yGrowth,XGrowth_sm)
+modelGrowth.fit().summary()
+
+from sklearn.linear_model import LinearRegression, Lasso
+from sklearn.model_selection import cross_val_score
+
+lmGrowth = LinearRegression()
+lmGrowth.fit(XGrowth_train, yGrowth_train)
+np.mean(cross_val_score(lmGrowth,XGrowth_train,yGrowth_train, scoring = 'neg_mean_absolute_error', cv=5))
+
+# lasso regression GROWTH
+
+lm_lGrowth = Lasso(alpha=.99)
+lm_lGrowth.fit(XGrowth_train,yGrowth_train)
+np.mean(cross_val_score(lm_lGrowth,XGrowth_train,yGrowth_train))
+
+alphaGrowth = []
+errorGrowth = []
+
+for i in range(1,300):
+    alphaGrowth.append(i/300)
+    lml = Lasso(alpha=(i/300))
+    errorGrowth.append(np.mean(cross_val_score(lml,XGrowth_train,yGrowth_train, scoring = 'neg_mean_absolute_error', cv=5)))
+    
+plt.plot(alphaGrowth,errorGrowth)
+
+err = tuple(zip(alphaGrowth,errorGrowth))
+df_errGrowth = pd.DataFrame(err, columns = ['alpha','error'])
+df_errGrowth[df_errGrowth.error == max(df_errGrowth.error)]
+
+# random forest
+
+from sklearn.ensemble import RandomForestRegressor
+rf = RandomForestRegressor()
+
+np.mean(cross_val_score(rf,XGrowth_train,yGrowth_train,scoring = 'neg_mean_absolute_error', cv= 3))
+
+# tune models GrindsearchCV
+
+from sklearn.model_selection import GridSearchCV
+parameters = {'n_estimators':range(10,300,10), 'criterion':('mse','mae'), 'max_features':('auto','sqrt','log2')}
+
+gsGrowth = GridSearchCV(rf,parameters,scoring='neg_mean_absolute_error',cv=3)
+gsGrowth.fit(XGrowth_train,yGrowth_train)
+gsGrowth.best_score_
+gsGrowth.best_estimator_
+
+
+# test ensembles
+from sklearn.metrics import mean_absolute_error
+
+tpred_lmGrowth = lmGrowth.predict(XGrowth_test)
+tpred_lmlGrowth = lm_lGrowth.predict(XGrowth_test)
+tpred_rfGrowth = gsGrowth.best_estimator_.predict(XGrowth_test)
+mean_absolute_error(yGrowth_test,tpred_lmGrowth)
+mean_absolute_error(yGrowth_test,tpred_lmlGrowth)
+mean_absolute_error(yGrowth_test,tpred_rfGrowth)
+mean_absolute_error(yGrowth_test,(tpred_lmGrowth+tpred_rfGrowth)/2)
+
+
+
+# # import pickle
+# # pickl = {'model': gs.best_estimator_}
+# # pickle.dump( pickl, open( 'model_file' + ".p", "wb" ) )
+
+# # file_name = "model_file.p"
+# # with open(file_name, 'rb') as pickled:
+# #     data = pickle.load(pickled)
+# #     model = data['model']
+
+# # model.predict(np.array(list(X_test.iloc[1,:])).reshape(1,-1))[0]
+
+# # list(X_test.iloc[1,:])
+
+
