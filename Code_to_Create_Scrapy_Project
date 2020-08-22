@@ -1,0 +1,13 @@
+
+(base) michel@michelmm:~$ scrapy startproject project1_cars
+New Scrapy project 'project1_cars', using template directory '/home/michel/anaconda3/lib/python3.7/site-packages/scrapy/templates/project', created in:
+    /home/michel/project1_cars
+
+You can start your first spider with:
+    cd project1_cars
+    scrapy genspider example example.com
+(base) michel@michelmm:~$ cd project1_cars
+(base) michel@michelmm:~/project1_cars$ scrapy genspider project1_cars_toyota fairfaxcountry.gov
+Created spider 'project1_cars_toyota' using template 'basic' in module:
+  project1_cars.spiders.project1_cars_toyota
+(base) michel@michelmm:~/project1_cars$ scrapy crawl project1_cars_toyota
